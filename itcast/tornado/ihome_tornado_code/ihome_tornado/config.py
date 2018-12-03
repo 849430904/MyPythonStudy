@@ -16,7 +16,7 @@ mysql_options = dict(
     host="127.0.0.1",
     database="ihome",
     user="root",
-    password="mysql"
+    password="12345678"
 )
 
 # Redis配置参数
