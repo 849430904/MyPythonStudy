@@ -106,6 +106,15 @@ history(count, unit, field, security_list=['index_list'], df=True, skip_paused=F
 ##### 获取单只个股历史数据，[具体参考](https://www.joinquant.com/view/community/detail/c688e86342b472f380c8fb9fc58eec54)
 ![](https://image.joinquant.com/c53d18cafeca95a6c146e712a4864cef)
 
+##### [获取历史数据](https://joinquant.com/help/api/help?name=api_old#get_bars-%E8%8E%B7%E5%8F%96%E5%8E%86%E5%8F%B2%E6%95%B0%E6%8D%AE)，可以同时获取多只个股且可以获取分钟、日线、周线、月线
+![](img/get_bars.png)
+
+'''
+data = get_bars(security='000001.XSHG', count=100, unit='1w',
+                include_now=False, 
+                end_dt='2019-07-10', fq_ref_date=None)
+'''
+
 ##### [获取财务数据](https://www.joinquant.com/help/api/help?name=api_old#get_fundamentals-%E6%9F%A5%E8%AF%A2%E8%B4%A2%E5%8A%A1%E6%95%B0%E6%8D%AE)  [涉及到的财务字段与表](https://www.joinquant.com/help/api/help?name=Stock#%E8%B4%A2%E5%8A%A1%E6%95%B0%E6%8D%AE%E5%88%97%E8%A1%A8)
 
 ````
