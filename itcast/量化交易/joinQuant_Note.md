@@ -47,7 +47,8 @@
 	order_value("000001.XSHE",10000) 表示买入10000元的平安银行，如果当前股票市价是10元，则代表买入1000股
 	
 	order_target_value(security,value)，通过买卖，将股票仓位调整至一定价值量（单位：元），如：
-	order_target_value("000001.XSHE",10000) 调整平安银行的持股价值量至10000元 即：如果目前平安银行的持股价值量（按股票市价算）低于10000元就买入，高于就是卖出，不高不低就不动。   		
+	order_target_value("000001.XSHE",10000) 调整平安银行的持股价值量至10000元 即：如果目前平安银行的持股价值量（按股票市价算）低于10000元就买入，高于就是卖出，不高不低就不动。  
+	 		
 ````
 
 ##### [content数据解析，非常重要](https://www.joinquant.com/view/community/detail/04a0251d77b31e782afa0f321c459d10)
@@ -149,6 +150,56 @@ query模板：
 
 获取所有农业股：
 log.info(get_industry_stocks('A01', date=None))
+获取指数个股
+indexs = get_index_stocks('000300.XSHG')# 获取所有沪深300的股票,只返回的代码
 
+````
+
+###### [获取个股资金流向](https://www.joinquant.com/help/api/help?name=Stock#%E8%8E%B7%E5%8F%96%E8%82%A1%E7%A5%A8%E8%B5%84%E9%87%91%E6%B5%81%E5%90%91%E6%95%B0%E6%8D%AE)
+
+````
+    获取2019-07-11前5天的流向
+    money_flow = get_money_flow('300251.XSHE',end_date='2019-07-11',fields=['date','change_pct','net_amount_l','net_amount_m'], count=5)
+    log.info(money_flow)
+    
+    date	日期	
+	sec_code	股票代码	
+	change_pct	涨跌幅(%)	
+	net_amount_main	主力净额(万)	主力净额 = 超大单净额 + 大单净额
+	net_pct_main	主力净占比(%)	主力净占比 = 主力净额 / 成交额
+	net_amount_xl	超大单净额(万)	超大单：大于等于50万股或者100万元的成交单
+	net_pct_xl	超大单净占比(%)	超大单净占比 = 超大单净额 / 成交额
+	net_amount_l	大单净额(万)	大单：大于等于10万股或者20万元且小于50万股或者100万元的成交单
+	net_pct_l	大单净占比(%)	大单净占比 = 大单净额 / 成交额
+	net_amount_m	中单净额(万)	中单：大于等于2万股或者4万元且小于10万股或者20万元的成交单
+	net_pct_m	中单净占比(%)	中单净占比 = 中单净额 / 成交额
+	net_amount_s	小单净额(万)	小单：小于2万股或者4万元的成交单
+	net_pct_s	小单净占比(%)	小单净占比 = 小单净额 / 成交额
+
+````
+
+
+##### 常用代码
+
+````
+# 过滤停牌、退市、ST股票
+def paused_filter(security_list):
+    current_data = get_current_data()
+    security_list = [stock for stock in security_list if not current_data[stock].paused]
+    return security_list
+
+def delisted_filter(security_list):
+    current_data = get_current_data()
+    security_list = [stock for stock in security_list if not '退' in current_data[stock].name]
+    return security_list
+
+def st_filter(security_list):
+    current_data = get_current_data()
+    security_list = [stock for stock in security_list if not current_data[stock].is_st]
+    return security_list
+    
+stockpool = paused_filter(stockpool)# 过滤停牌
+stockpool = delisted_filter(stockpool)# 过滤退市
+stockpool = st_filter(stockpool)# 过滤ST股票    
 ````
 
