@@ -141,6 +141,23 @@ query模板：
     log.info(w)
     
     如上面的valuation表示市值表
+    
+    # 查询平安银行2014年四个季度的季报, 放到数组中
+	q = query(
+	        income.statDate,
+	        income.code,
+	        income.basic_eps,
+	        balance.cash_equivalents,
+	        cash_flow.goods_sale_and_service_render_cash
+	    ).filter(
+	        income.code == '000001.XSHE',
+	    )
+	
+	rets = [get_fundamentals(q, statDate='2014q'+str(i)) for i in range(1, 5)]
+	
+	
+	get_fundamentals(q)
+	
 ````
 
 
@@ -183,6 +200,10 @@ indexs = get_index_stocks('000300.XSHG')# 获取所有沪深300的股票,只返�
 
 ````
 # 过滤停牌、退市、ST股票
+
+000300.XSHG 
+000016
+
 def paused_filter(security_list):
     current_data = get_current_data()
     security_list = [stock for stock in security_list if not current_data[stock].paused]
@@ -201,5 +222,203 @@ def st_filter(security_list):
 stockpool = paused_filter(stockpool)# 过滤停牌
 stockpool = delisted_filter(stockpool)# 过滤退市
 stockpool = st_filter(stockpool)# 过滤ST股票    
+
+
+    ret = get_fundamentals(q, statDate='2014')
+    print(ret.iloc[0]['code'])
+    print(list(ret['code']))
+
+
+current_price = history(1, '1m', 'close', security).iloc[0].iloc[0] 
+
+ KD指标:
+	K1, D1 = KD(security, check_date=context.current_dt, N=9, M1=3, M2=3)
+	K2, D2 = KD(security, check_date=context.previous_date-datetime.timedelta(days=1),N=9,M1=3,M2=3)
+	if  K1[security]>D1[security] and K2[security] <=D2[security]:#金叉
+	  ....
+	if K1[security]<=D1[security] and K2[security] >D2[security]#死叉 
+
+DKX指标：多空线
+    K1, D1 = DKX(security, check_date=context.current_dt, M=10,unit='1w')
+    K2, D2 = DKX(security, check_date=context.previous_date-datetime.timedelta(days=1),M=10,unit='1w')
+
+    # 形成死叉，并且目前有头寸,有可卖出股票，则全仓卖出
+    if  K1[security]<=D1[security] and K2[security] >D2[security]        
+    
+    if  K1[stk]>D1[stk] and K2[stk] <=D2[stk]: #金叉
+    
+    
 ````
 
+* [向导式框架封装的库函数](https://www.joinquant.com/view/community/detail/990ed90abc51dd87ba84d7b30ab17754)
+
+##### 取前几日换手率排名
+
+````
+
+now_data:获取时间
+first_number:开始排名
+second_number:截取排名
+days:天数
+
+def choose_stock(now_data,first_number,second_number,days=1):
+    stock_dict = {}
+    for i in range(1,days+1):
+        #格式化时间       
+        while(1):
+            print(i)
+            ctime = datetime.datetime.strptime(str(now_data), '%Y-%m-%d')#.timestamp()
+            if i > 1:
+                dates = ctime + datetime.timedelta(days = -i+1)
+            else:
+                dates = ctime
+            timeArray = time.strptime(str(dates), "%Y-%m-%d %H:%M:%S")
+            # 转换成时间戳
+            timestamp = int(time.mktime(timeArray))
+            timeArray = time.localtime(timestamp)
+            otherStyleTime = time.strftime("%Y-%m-%d", timeArray)
+            print(otherStyleTime)
+            q = query(
+                valuation.turnover_ratio,valuation.code
+            ).order_by(
+                    # 按换手率降序排列
+                    valuation.turnover_ratio.desc()
+                )
+           
+            stocks=get_fundamentals_continuously(q,end_date=str(otherStyleTime), count=1) #查询多日的财务数据
+            try:
+                other_stocks = stocks['turnover_ratio',otherStyleTime]
+                
+            except:
+                i = i + 1
+                continue
+            stock_dict = other_stocks.to_dict()
+            sort_stock = sorted(stock_dict.items(), key=lambda x: x[1], reverse=True)#进行排序
+            break;
+       
+        for index in sort_stock:
+            try:
+                if g.stock_dict[index[0]]:
+                  
+                   g.stock_dict[index[0]] = g.stock_dict[index[0]] + index[1]
+            except:
+              
+               g.stock_dict[index[0]] = index[1]
+        ##g.all_stock.append(g.stock_dict)
+        # if i == days:
+    # print(g.stock_dict)
+    # exit()
+    sort_stock = sorted(g.stock_dict.items(), key=lambda x: x[1], reverse=True)#进行排序
+    j = 0
+    for index in  sort_stock:
+        if j >=first_number and j<=second_number:
+            g.really_stock_dict[index[0]] = index[1]
+        j = j + 1
+    print(g.really_stock_dict)###最终选好的换手率最高的股票
+    
+````
+
+#### 当前持仓盈亏情况
+
+````
+def hold_earn(context):
+    hold_s = context.portfolio.positions.keys()
+    hold_e = {}
+    for stock in hold_s:
+        avg_cost = context.portfolio.positions[stock].avg_cost
+        current_price = context.portfolio.positions[stock].price
+        hold_e[stock] = current_price/avg_cost
+    return hold_e
+    
+````
+
+#### 获取连续涨停股票
+
+````
+def get_continuous_limithigh_stocks(context,count=10,end_date='2019-6-7'):
+    #count = 10#获取当前日期前10个交易日的数据
+    #end_date = datetime.datetime.now().strftime('%Y-%m-%d')#获取当前日期
+    stocks = list(get_all_securities(['stock']).index)#获取所有股票代码
+    high_limit_stocks = {}
+    is_st = get_extras('is_st',stocks, start_date=None, end_date=end_date, df=False, count=1)#获取st股票
+    stocks_value = get_price(stocks, start_date=None, end_date=end_date, frequency='daily', fields=['close', 'volume', 'high_limit', 'paused'], skip_paused=False, fq='pre', count=count)
+    #获取股票数据
+    for stock in stocks:
+        high_limit_continous_count = 0
+        for i in range(count):
+            if stocks_value['close'][stock][count - 1 - i] == stocks_value['high_limit'][stock][count - 1 - i]:
+                high_limit_continous_count = high_limit_continous_count + 1
+            else:
+                #涨停板+非停牌+非st
+                if high_limit_continous_count != 0 and not stocks_value['paused'][stock][count - 1] and not is_st[stock][0]:
+                    high_limit_stocks[stock] = high_limit_continous_count
+                break
+    return high_limit_stocks
+````
+
+#### [MACD底背离](https://www.joinquant.com/algorithm/apishare/get?apiId=f93610963d769c985d15f156552a7115) [或者](https://www.joinquant.com/algorithm/apishare/get?apiId=6c876b479516bad9267ef49af82a11e6)
+
+````
+
+def filter_vmacd(stocklist):
+    
+    returnStock =[];
+    
+    for stock in stocklist:
+        
+        fast = 12
+        slow = 26
+        sign =  9
+        rows = (fast + slow + sign) * 5
+        suit = {'dif':0, 'dea':0, 'macd':0, 'gold':False, 'dead':False}
+        grid = attribute_history(stock, rows, fields=['vol']).dropna()
+        try:
+            grid['dif'], grid['dea'], grid['macd'] = tl.MACD(grid['vol'].values, fast, slow, sign)
+            grid = grid.dropna()
+            # 底背离----------------------------------------------------------------
+            mask = grid['macd']>0
+            mask = mask[mask==True][mask.shift(1)==False]
+          
+            #key3 = mask.keys()[-3]
+            key2 = mask.keys()[-2]
+            key1 = mask.keys()[-1]
+            if grid.vol[key2]>grid.vol[key1] and \
+                           grid.dif[key2]<grid.dif[key1]<0 and \
+                           grid.macd[-2]<0<grid.macd[-1]:
+                returnStock.append(stock);
+        except:
+            pass
+    return returnStock
+    
+
+def doDecide(stock):
+    fast = 12
+    slow = 26
+    sign =  9
+    rows = (fast + slow + sign) * 5
+    suit = {'dif':0, 'dea':0, 'macd':0, 'gold':False, 'dead':False}
+    grid = attribute_history(stock, rows, fields=['close']).dropna()
+    try:
+        grid['dif'], grid['dea'], grid['macd'] = talib.MACD(grid['close'].values, fast, slow, sign)
+        grid = grid.dropna()
+        # 底背离----------------------------------------------------------------
+        mask = grid['macd']>0
+        mask = mask[mask==True][mask.shift(1)==False]
+        key2 = mask.keys()[-2]
+        key1 = mask.keys()[-1]
+        suit['gold'] = grid.close[key2]>grid.close[key1] and \
+                       grid.dif[key2]<grid.dif[key1]<0   and \
+                       grid.macd[-2]<0<grid.macd[-1]
+        # 顶背离----------------------------------------------------------------
+        mask = grid['macd']<0
+        mask = mask[mask==True][mask.shift(1)==False]
+        key2 = mask.keys()[-2]
+        key1 = mask.keys()[-1]
+        suit['dead'] = grid.close[key2]<grid.close[key1] and \
+                       grid.dif[key2]>grid.dif[key1]>0   and \
+                       grid.macd[-2]>0>grid.macd[-1]
+    except:
+        pass
+    return suit   
+    
+````
