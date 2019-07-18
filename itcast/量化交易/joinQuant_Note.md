@@ -422,3 +422,56 @@ def doDecide(stock):
     return suit   
     
 ````
+##### 过滤均线多头的个股:
+
+````
+ #选取日和周均线多头排列的股票
+from jqlib.technical_analysis import MA
+def filter_duotou_list(securitys,date,unit1='1d',unit2 = None):
+    sel_list = []
+    ma5_df = pd.Series(MA(securitys,date,timeperiod=5,unit=unit1))  #include_now为True,计算的MA包含当前最新价
+    ma10_df = pd.Series(MA(securitys,date,timeperiod=10,unit=unit1))
+    ma20_df = pd.Series(MA(securitys,date,timeperiod=20,unit=unit1))
+    ma30_df = pd.Series(MA(securitys,date,timeperiod=30,unit=unit1))
+    ma60_df = pd.Series(MA(securitys,date,timeperiod=60,unit=unit1)) 
+    sel_list = list(set(ma5_df[(ma5_df>ma10_df) & (ma10_df > ma20_df) & (ma20_df > ma30_df) & (ma30_df > ma60_df)].index))  
+    if unit2 is not None:
+        ma5_df = pd.Series(MA(sel_list,date,timeperiod=5,unit=unit2))  #include_now为True,计算的MA包含当前最新价
+        ma10_df = pd.Series(MA(sel_list,date,timeperiod=10,unit=unit2))
+        ma20_df = pd.Series(MA(sel_list,date,timeperiod=20,unit=unit2))
+        ma30_df = pd.Series(MA(sel_list,date,timeperiod=30,unit=unit2))
+        ma60_df = pd.Series(MA(sel_list,date,timeperiod=60,unit=unit2)) 
+        sel_list = list(set(ma5_df[(ma5_df>ma10_df) & (ma10_df > ma20_df) & (ma20_df > ma30_df) & (ma30_df > ma60_df)].index))  
+    
+    return sel_list
+````
+
+##### 上阴线
+
+
+````
+ #bar 最高价和收盘价比值大于2%, 上阴线确认
+def is_upline_dead(context, stock, h):
+    flag = False 
+    for num in range(1,5):
+        if (h['high'][-num] - h['open'][-num]) / h['open'][-num] > 0.02 :
+            flag = True
+            break
+    return flag
+    
+````
+
+###### 龙头 能源
+
+````
+上证龙头 000065.XSHG
+中证龙头 000960.XSHG
+深证龙头 399653.XSHE
+中证能源 000928.XSHG
+
+    # all = get_all_securities(['index'])
+    # log.info(all.columns.values.tolist())
+    # for i in range(len(all)):
+    #     data = all.iloc[i]
+    #     log.info(data)
+````
