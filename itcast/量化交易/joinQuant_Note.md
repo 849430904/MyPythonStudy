@@ -475,3 +475,5 @@ def is_upline_dead(context, stock, h):
     #     data = all.iloc[i]
     #     log.info(data)
 ````
+
+#### [技术分析指标](https://joinquant.com/data/dict/technicalanalysis)
