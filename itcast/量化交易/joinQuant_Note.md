@@ -477,3 +477,33 @@ def is_upline_dead(context, stock, h):
 ````
 
 #### [技术分析指标](https://joinquant.com/data/dict/technicalanalysis)
+
+## [期货相关](https://www.joinquant.com/help/api/help?name=api#%E6%9C%9F%E8%B4%A7%E7%AD%96%E7%95%A5%E4%B8%93%E7%94%A8%E5%87%BD%E6%95%B0)
+````
+获取当前主力合约，如螺纹：
+get_dominant_future('RB', date=None)
+设置保证金比例：
+set_option('futures_margin_rate', 0.25) # 设定期货保证金比例为25%
+获取期货价格：
+df = get_price('C1909.XDCE', end_date='2019-06-28 15:00:00', count=5, 
+                fields=['close', 'open_interest'], frequency='1m')
+                
+下单函数：
+order(security, amount, style=None, side='long', pindex=0, close_today=False)
+买卖标的。调用成功后, 您将可以调用[get_open_orders]取得所有未完成的交易, 也可以调用[cancel_order]取消交易
+参数：
+	security: 标的代码
+	amount: 交易数量, 正数表示买入, 负数表示卖出
+	style: 参见OrderStyle, None代表MarketOrder
+	side: 'long'/'short'，操作多单还是空单，默认为多单。
+	pindex: 在使用set_subportfolios创建了多个仓位时，指定subportfolio 的序号, 从 0 开始, 比如 0 指定第一个 subportfolio, 1 指定第二个 subportfolio，默认为0。
+	close_today: 平今字段，仅对上海国际能源中心，上海期货交易所，中金所生效，其他交易所将会报错（其他交易所没有区分平今与平昨，均按照先开先平的方法处理）。
+	对上海国际能源中心，上海期货交易所，中金所的标的：
+	close_today = True, 只平今仓
+	close_today = False, 优先平昨仓，昨仓不足部分平进仓
+	返回 Order对象或者None, 如果创建订单成功, 则返回Order对象, 失败则返回None    
+	
+
+另外:还有下单函数order_target、order_value、order_target_value
+	
+````
